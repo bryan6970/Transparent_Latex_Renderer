@@ -4,11 +4,8 @@ import numpy as np
 from PIL import Image
 import io
 import base64
-from streamlit_js_eval import streamlit_js_eval
 
-from PIL import Image
 from collections import Counter
-import io
 from typing import Tuple
 
 
