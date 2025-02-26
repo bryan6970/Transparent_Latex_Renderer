@@ -6,7 +6,7 @@ import io
 import base64
 
 from collections import Counter
-from typing import Tuple
+from typing import Tuple, Union
 
 
 class ImageUtils:
@@ -38,35 +38,47 @@ class ImageUtils:
         return img_base64
 
 
-def render_latex_to_image(latex_code, latex_color):
-    """Render the LaTeX code to an image with a given color."""
-    
+
+def get_bg_color(latex_color):
     # Calculate the greyscale value of the latex_color
     grey_value = ImageUtils.get_greyscale_value(latex_color)
     
     # Set the background color to black if the latex_color is closer to white
     if grey_value > 0.5:  # If the color is closer to white
-        background_color = 'black'
+        return 'black'
     else:
-        background_color = 'white'  # Keep the default white background if it's close to black
+       return  'white'  # Keep the default white background if it's close to black
+
+def render_latex_to_image(latex_code, latex_color) -> Union[Image.Image, None]:
+    """Render the LaTeX code to an image with a given color."""
+    
+    plt.rcParams['text.usetex'] = True
+    plt.rcParams['font.family'] = 'serif'  # This ensures the use of a serif font, typically used in LaTeX
+    plt.rcParams['text.latex.preamble'] = "\\usepackage{amsmath}"
+
+    background_color = get_bg_color(latex_color)
+
+    # Split the input latex_code into individual equations based on newline characters
+    equations = latex_code.split("\n")
+    for eqn in equations:
+        if len(eqn) == 0:
+            equations.remove(eqn)
+
+    no_equations = len(equations)
+
+    if no_equations == 0:
+        return None
     
     # Create a figure with a dummy axis to calculate the height of the LaTeX text
-    fig = plt.figure(figsize=(6, 6), dpi=300)
-    ax = fig.add_subplot(111)
+    fig, ax = plt.subplots(figsize=(6, no_equations * 2), dpi=300)  # Increase height for multiple equations
     ax.axis('off')  # Hide the axes
     
-    # Render LaTeX code with a temporary fontsize (we'll adjust the size later)
-    text_obj = ax.text(0.5, 0.5, f'${latex_code}$', fontsize=50, ha='center', va='center', color=latex_color)
-
-    # Get the bounding box of the text to estimate the height
-    bbox = text_obj.get_window_extent()
-    height_in_inches = bbox.height / fig.dpi  # Convert pixel height to inches based on dpi
-    
-    # Adjust figure size dynamically based on the text height
-    fig.set_size_inches(6, height_in_inches * 1.2)  # Slightly increase the height for padding
-
-    # Set background color
+    # Set the background color
     plt.gca().set_facecolor(background_color)
+    
+    # Render each equation
+    for i, eq in enumerate(equations):
+        ax.text(0.5, 1 - (i / no_equations), f'${eq}$', fontsize=50, ha='center', va='center', color=latex_color)
 
     # Save to a BytesIO buffer
     buf = io.BytesIO()
@@ -156,41 +168,43 @@ def main():
     latex_color = st.color_picker('Pick a color for the LaTeX text', '#000000')  # Default black
 
     # Render LaTeX as text
-    # if latex_input:
-    #     st.latex(latex_input)
+    if latex_input:
+        st.latex(latex_input)
 
     
     if latex_input:
         # Render the LaTeX expression to an image
         img = render_latex_to_image(latex_input, latex_color)
 
-        # Process the image to make certain pixels transparent
-        transparent_img_io, background_rgba = make_color_pixels_transparent(img)
+        if img is not  None:
+            
+            # Process the image to make certain pixels transparent
+            transparent_img_io, background_rgba = make_color_pixels_transparent(img)
 
-        # Convert BytesIO back to a PIL image
-        transparent_img = Image.open(transparent_img_io)
+            # Convert BytesIO back to a PIL image
+            transparent_img = Image.open(transparent_img_io)
 
-        # Convert transparent image to Base64
-        buffer = io.BytesIO()
-        transparent_img.save(buffer, format="PNG")
-        img_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+            # Convert transparent image to Base64
+            buffer = io.BytesIO()
+            transparent_img.save(buffer, format="PNG")
+            img_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
 
-        # HTML for displaying the transparent image over a background color
-        html_code = f"""
-        <div style="
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: rgb{background_rgba};  
-            padding: 20px;
-        ">
-            <img src="data:image/png;base64,{img_base64}" 
-                style="max-width: 100%; height: auto;" 
-                alt="Rendered LaTeX Image"/>
-        </div>
-        """
+            # HTML for displaying the transparent image over a background color
+            html_code = f"""
+            <div style="
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                background-color: rgb{background_rgba};  
+                padding: 20px;
+            ">
+                <img src="data:image/png;base64,{img_base64}" 
+                    style="max-width: 100%; height: auto;" 
+                    alt="Rendered LaTeX Image"/>
+            </div>
+            """
 
-        # Render the HTML with CSS in Streamlit
-        st.markdown(html_code, unsafe_allow_html=True)
+            # Render the HTML with CSS in Streamlit
+            st.markdown(html_code, unsafe_allow_html=True)
 if __name__ == '__main__':
     main()
