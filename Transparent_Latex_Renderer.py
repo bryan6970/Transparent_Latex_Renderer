@@ -156,8 +156,8 @@ def main():
     latex_color = st.color_picker('Pick a color for the LaTeX text', '#000000')  # Default black
 
     # Render LaTeX as text
-    if latex_input:
-        st.latex(latex_input)
+    # if latex_input:
+    #     st.latex(latex_input)
 
     
     if latex_input:
