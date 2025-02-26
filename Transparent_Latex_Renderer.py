@@ -51,8 +51,7 @@ def get_bg_color(latex_color):
 
 def render_latex_to_image(latex_code, latex_color) -> Union[Image.Image, None]:
     """Render the LaTeX code to an image with a given color."""
-    
-    plt.rcParams['text.usetex'] = True
+
     plt.rcParams['font.family'] = 'serif'  # This ensures the use of a serif font, typically used in LaTeX
     plt.rcParams['text.latex.preamble'] = "\\usepackage{amsmath}"
 
@@ -169,7 +168,7 @@ def main():
 
     # Render LaTeX as text
     if latex_input:
-        st.latex(latex_input)
+        st.latex(r"\huge " + latex_input)
 
     
     if latex_input:
